@@ -1,24 +1,14 @@
-from rest_framework import (
-    mixins,
-    generics,
-    viewsets,
-    status,
-)
-from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from rest_framework import mixins, generics, viewsets, status
 from rest_framework.views import APIView
+from rest_framework.response import Response
 
-from .models import (
-    Actor,
-    CinemaHall,
-    Movie,
-    Genre,
-)
-
+from .models import Actor, Genre, CinemaHall, Movie
 from .serializers import (
     ActorSerializer,
+    GenreSerializer,
     CinemaHallSerializer,
     MovieSerializer,
-    GenreSerializer,
 )
 
 
@@ -28,7 +18,7 @@ class ActorGenericAPIView(
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
-    generics.GenericAPIView
+    generics.GenericAPIView,
 ):
     queryset = Actor.objects.all()
     serializer_class = ActorSerializer
@@ -57,7 +47,7 @@ class CinemaHallGenericViewSet(
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
-    viewsets.GenericViewSet
+    viewsets.GenericViewSet,
 ):
     queryset = CinemaHall.objects.all()
     serializer_class = CinemaHallSerializer
@@ -71,7 +61,7 @@ class MovieModelViewSet(viewsets.ModelViewSet):
 class GenreAPIView(APIView):
     def get(self, request, pk=None):
         if pk:
-            genre = Genre.objects.get(pk=pk)
+            genre = get_object_or_404(Genre, pk=pk)
             serializer = GenreSerializer(genre)
             return Response(serializer.data)
 
@@ -83,8 +73,23 @@ class GenreAPIView(APIView):
         serializer = GenreSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED
-        )
+    def put(self, request, pk):
+        genre = get_object_or_404(Genre, pk=pk)
+        serializer = GenreSerializer(genre, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        genre = get_object_or_404(Genre, pk=pk)
+        serializer = GenreSerializer(genre, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, pk):
+        genre = get_object_or_404(Genre, pk=pk)
+        genre.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
